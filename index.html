@@ -29,7 +29,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             padding: 20px;
         }
-        #search-bar {
+#search-bar {
             width: 100%;
             padding: 10px 15px;
             margin-bottom: 15px;
@@ -57,7 +57,7 @@
             background-color: #f1f3f4;
             color: #202124;
             font-weight: 500;
-            cursor: pointer; /* clickable for sorting */
+            cursor: pointer;
             position: relative;
         }
         th.sorted-asc::after {
@@ -67,7 +67,7 @@
             font-size: 12px;
             color: #4285f4;
         }
-        th.sorted-desc::after {
+th.sorted-desc::after {
             content: "▼";
             position: absolute;
             right: 8px;
@@ -101,17 +101,18 @@
             <thead>
                 <tr>
                     <th data-type="date">Visa Bulletin Month</th>
-                    <th data-type="string">Final Action Dates (EB-1 India)</th>
                     <th data-type="string">Dates for Filing (EB-1 India)</th>
-                    <th data-type="diff">Difference (Days & Months)</th>
+                    <th data-type="string">Wait Time</th>
+                    <th data-type="string">Final Action Dates (EB-1 India)</th>
+                    <th data-type="diff">Difference Filing vs Approval (Days & Months)</th>
                 </tr>
-            </thead>
+  </thead>
             <tbody></tbody>
         </table>
     </main>
     <footer>
         Last updated: <span id="last-updated"></span>
- </footer>
+    </footer>
 
     <script>
         // Helper: parse "February 2022" into Date object
@@ -119,7 +120,7 @@
             try {
                 return new Date(Date.parse(str));
             } catch {
-                return new Date(0); // invalid -> earliest
+                return new Date(0);
             }
         }
 
@@ -138,10 +139,11 @@
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td>${row["Visa Bulletin Month"]}</td>
-                        <td>${row["Final Action Dates (EB-1 India)"]}</td>
                         <td>${row["Dates for Filing (EB-1 India)"]}</td>
-                        <td>${row["Difference (Days & Months)"]}</td>
-                    `;
+                        <td>${row["Wait Time"]}</td>
+                        <td>${row["Final Action Dates (EB-1 India)"]}</td>
+                        <td>${row["Difference Filing vs Approval (Days & Months)"]}</td>
+ `;
                     tbody.appendChild(tr);
                 });
 
@@ -159,8 +161,7 @@
                 row.style.display = text.includes(filter) ? '' : 'none';
             });
         });
-
- // Sorting functionality with visual indicators
+// Sorting functionality with visual indicators
         document.querySelectorAll('#data-table th').forEach((header, index) => {
             header.addEventListener('click', () => {
                 sortTable(index, header.getAttribute('data-type'), header);
@@ -178,10 +179,9 @@
             document.querySelectorAll('#data-table th').forEach(th => {
                 th.classList.remove('sorted-asc', 'sorted-desc');
             });
-            // Add sort indicator to clicked header
             clickedHeader.classList.add(asc ? 'sorted-asc' : 'sorted-desc');
 
-            rows.sort((a, b) => {
+ rows.sort((a, b) => {
                 let aText = a.cells[columnIndex].textContent.trim();
                 let bText = b.cells[columnIndex].textContent.trim();
 
