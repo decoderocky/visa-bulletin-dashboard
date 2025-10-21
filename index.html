@@ -1,0 +1,206 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Visa Bulletin EB-1 India Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        header h1 {
+            margin: 0;
+            font-weight: 500;
+            color: #202124;
+        }
+        main {
+            max-width: 1100px;
+            margin: 30px auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            padding: 20px;
+        }
+        #search-bar {
+            width: 100%;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            border: 1px solid #dadce0;
+            border-radius: 24px;
+            outline: none;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        }
+        #search-bar:focus {
+            border-color: #4285f4;
+            box-shadow: 0 0 0 2px rgba(66,133,244,0.3);
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+        }
+        th, td {
+            text-align: center;
+            padding: 12px;
+            cursor: default;
+        }
+        th {
+            background-color: #f1f3f4;
+            color: #202124;
+            font-weight: 500;
+            cursor: pointer; /* clickable for sorting */
+            position: relative;
+        }
+        th.sorted-asc::after {
+            content: "▲";
+            position: absolute;
+            right: 8px;
+            font-size: 12px;
+            color: #4285f4;
+        }
+        th.sorted-desc::after {
+            content: "▼";
+            position: absolute;
+            right: 8px;
+            font-size: 12px;
+            color: #4285f4;
+        }
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        tr:hover {
+            background-color: #e8f0fe;
+        }
+        footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 14px;
+            color: #5f6368;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Visa Bulletin EB-1 India Dashboard</h1>
+    </header>
+    <main>
+        <!-- Search Bar -->
+        <input type="text" id="search-bar" placeholder="Search by month, year, or date...">
+
+        <!-- Data Table -->
+        <table id="data-table">
+            <thead>
+                <tr>
+                    <th data-type="date">Visa Bulletin Month</th>
+                    <th data-type="string">Final Action Dates (EB-1 India)</th>
+                    <th data-type="string">Dates for Filing (EB-1 India)</th>
+                    <th data-type="diff">Difference (Days & Months)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </main>
+    <footer>
+        Last updated: <span id="last-updated"></span>
+ </footer>
+
+    <script>
+        // Helper: parse "February 2022" into Date object
+        function parseMonthYear(str) {
+            try {
+                return new Date(Date.parse(str));
+            } catch {
+                return new Date(0); // invalid -> earliest
+            }
+        }
+
+        // Helper: extract days from "424 days (~14 months)"
+        function parseDaysFromDiff(str) {
+            const match = str.match(/^(\d+)/);
+            return match ? parseInt(match[1], 10) : 0;
+        }
+
+        // Fetch JSON data and populate table
+        fetch('visa_bulletin_eb1_india.json')
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.querySelector('#data-table tbody');
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row["Visa Bulletin Month"]}</td>
+                        <td>${row["Final Action Dates (EB-1 India)"]}</td>
+                        <td>${row["Dates for Filing (EB-1 India)"]}</td>
+                        <td>${row["Difference (Days & Months)"]}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                // Show last updated date
+                const now = new Date();
+                document.getElementById('last-updated').textContent = now.toLocaleString();
+            });
+
+        // Search bar functionality
+        document.getElementById('search-bar').addEventListener('keyup', function() {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#data-table tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+
+ // Sorting functionality with visual indicators
+        document.querySelectorAll('#data-table th').forEach((header, index) => {
+            header.addEventListener('click', () => {
+                sortTable(index, header.getAttribute('data-type'), header);
+            });
+        });
+
+        function sortTable(columnIndex, type, clickedHeader) {
+            const table = document.getElementById('data-table');
+            const tbody = table.tBodies[0];
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const asc = table.getAttribute('data-sort-dir') !== 'asc';
+            table.setAttribute('data-sort-dir', asc ? 'asc' : 'desc');
+
+            // Remove sort indicators from all headers
+            document.querySelectorAll('#data-table th').forEach(th => {
+                th.classList.remove('sorted-asc', 'sorted-desc');
+            });
+            // Add sort indicator to clicked header
+            clickedHeader.classList.add(asc ? 'sorted-asc' : 'sorted-desc');
+
+            rows.sort((a, b) => {
+                let aText = a.cells[columnIndex].textContent.trim();
+                let bText = b.cells[columnIndex].textContent.trim();
+
+                if (type === 'string') {
+                    return asc ? aText.localeCompare(bText) : bText.localeCompare(aText);
+                } else if (type === 'date') {
+                    const aDate = parseMonthYear(aText);
+                    const bDate = parseMonthYear(bText);
+                    return asc ? aDate - bDate : bDate - aDate;
+                } else if (type === 'diff') {
+                    const aDays = parseDaysFromDiff(aText);
+                    const bDays = parseDaysFromDiff(bText);
+                    return asc ? aDays - bDays : bDays - aDays;
+                }
+                return 0;
+            });
+
+            rows.forEach(row => tbody.appendChild(row));
+        }
+    </script>
+</body>
+</html>
